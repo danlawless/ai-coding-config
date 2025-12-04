@@ -125,28 +125,149 @@ tasks:
 <execution>
 If `--execute` flag provided, run `/swarm` with generated manifest.
 
-After each task completes:
-1. Add comment to issue with PR link
-2. Optionally close issue (if `--auto-close` flag)
-3. Remove swarm label, add "in-progress" or "pr-ready" label
+The issue becomes a **progress log** throughout execution. Every significant event is
+commented back to the issue so you have full visibility.
 </execution>
 
-<issue-update>
-After PR is created, update the original issue:
+<issue-progress-tracking>
+The GitHub issue serves as a real-time progress tracker. Comments are added at each stage:
+
+**1. Task Claimed (when agent picks up the task):**
 
 ```markdown
-🤖 **Swarm Bot**: PR created!
+🤖 **Swarm Bot**: Task claimed
 
-Pull Request: #789
+Agent: `oracle-arm-2`
 Branch: `feature/142-oauth2-token-refresh`
-Status: Ready for review
+Started: 2024-01-15T10:30:00Z
+
+Working on this now...
 
 ---
-*Processed by /swarm-issues at 2024-01-15T10:45:00Z*
+*Swarm ID: swarm-2024-01-15-abc123*
 ```
 
-Link PR to issue using GitHub's "Closes #142" in PR description.
-</issue-update>
+**2. Progress Update (periodically during execution):**
+
+```markdown
+🤖 **Swarm Bot**: Progress update
+
+Status: In Progress (45%)
+Current stage: Writing tests
+
+Agent: `oracle-arm-2`
+Elapsed: 8 minutes
+
+---
+*Updated: 2024-01-15T10:38:00Z*
+```
+
+**3. PR Created (on successful completion):**
+
+```markdown
+🤖 **Swarm Bot**: ✅ PR Ready for Review!
+
+**Pull Request:** #789
+**Branch:** `feature/142-oauth2-token-refresh`
+**Agent:** `oracle-arm-2`
+**Duration:** 12 minutes
+
+### Summary
+- Implemented OAuth2 token refresh flow
+- Added 15 unit tests (coverage: 94%)
+- Updated documentation
+
+### What was done
+- Created `src/auth/tokenRefresh.ts`
+- Modified `src/middleware/auth.ts`
+- Added tests in `tests/auth/tokenRefresh.test.ts`
+
+---
+*Completed: 2024-01-15T10:42:00Z*
+```
+
+**4. On Failure (if task fails):**
+
+```markdown
+🤖 **Swarm Bot**: ❌ Task Failed
+
+**Agent:** `oracle-arm-2`
+**Duration:** 8 minutes
+**Stage:** Running tests
+
+### Error
+```
+Test suite failed: 3 tests failing
+- tokenRefresh.test.ts: timeout error
+```
+
+### Next Steps
+- Review the error above
+- Fix and retry with `/swarm-issues --retry 142`
+- Or remove `swarm-ready` label to skip
+
+---
+*Failed: 2024-01-15T10:38:00Z*
+```
+
+**5. Dependency Waiting (when blocked):**
+
+```markdown
+🤖 **Swarm Bot**: ⏳ Waiting for dependencies
+
+This issue depends on:
+- [ ] #140 - Database schema changes (in progress)
+- [x] #141 - API types update (complete)
+
+Will automatically start when dependencies complete.
+
+---
+*Queued: 2024-01-15T10:30:00Z*
+```
+</issue-progress-tracking>
+
+<label-management>
+Labels are automatically updated to reflect status:
+
+| Stage | Label Changes |
+|-------|---------------|
+| Task claimed | Remove `swarm-ready`, add `swarm:in-progress` |
+| PR created | Remove `swarm:in-progress`, add `swarm:pr-ready` |
+| PR merged | Remove `swarm:pr-ready`, add `swarm:completed` |
+| Task failed | Remove `swarm:in-progress`, add `swarm:failed` |
+| Waiting deps | Add `swarm:blocked` |
+
+This makes it easy to filter issues by status in GitHub.
+</label-management>
+
+<issue-update-commands>
+GitHub CLI commands used for updates:
+
+```bash
+# Add comment to issue
+gh issue comment 142 --body "🤖 **Swarm Bot**: Task claimed..."
+
+# Update labels
+gh issue edit 142 --remove-label "swarm-ready" --add-label "swarm:in-progress"
+
+# Link PR to issue (in PR description)
+gh pr create --body "Closes #142
+
+## Summary
+..."
+```
+</issue-update-commands>
+
+<pr-issue-linking>
+PRs are automatically linked to issues:
+
+1. PR description includes `Closes #142` for auto-close on merge
+2. PR title references issue: `feat: Add OAuth2 token refresh (#142)`
+3. Issue gets a comment with PR link
+4. GitHub's sidebar shows linked PRs
+
+When PR is merged, GitHub automatically closes the linked issue.
+</pr-issue-linking>
 
 ## Issue Format Best Practices
 
@@ -213,6 +334,68 @@ GitHub Issues                    Swarm                         PRs
 | `--local` | Pass to swarm: run sequentially on local machine |
 | `--limit <n>` | Maximum issues to process |
 | `--repo <owner/repo>` | Target repo (default: current) |
+| `--verbose` | Post progress updates every 2 minutes |
+| `--quiet` | Only post start and completion comments |
+| `--no-labels` | Don't modify issue labels |
+
+## Example Issue Timeline
+
+Here's what a GitHub issue looks like after being processed by the swarm:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ #142 Add OAuth2 token refresh                                       │
+│ Labels: swarm:completed                                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│ @developer · 2 hours ago                                           │
+│ ┌─────────────────────────────────────────────────────────────┐    │
+│ │ ## Description                                               │    │
+│ │ Implement OAuth2 token refresh flow...                       │    │
+│ │                                                              │    │
+│ │ ## Acceptance Criteria                                       │    │
+│ │ - [ ] Tokens refresh automatically                           │    │
+│ │ - [ ] Tests included                                         │    │
+│ └─────────────────────────────────────────────────────────────┘    │
+│                                                                     │
+│ ─────────────────────────────────────────────────────────────────  │
+│                                                                     │
+│ 🤖 swarm-bot · 1 hour ago                                          │
+│ ┌─────────────────────────────────────────────────────────────┐    │
+│ │ 🤖 **Swarm Bot**: Task claimed                               │    │
+│ │                                                              │    │
+│ │ Agent: `oracle-arm-2`                                        │    │
+│ │ Branch: `feature/142-oauth2-token-refresh`                   │    │
+│ │ Started: 2024-01-15T10:30:00Z                                │    │
+│ └─────────────────────────────────────────────────────────────┘    │
+│                                                                     │
+│ 🤖 swarm-bot · 50 minutes ago                                      │
+│ ┌─────────────────────────────────────────────────────────────┐    │
+│ │ 🤖 **Swarm Bot**: Progress update                            │    │
+│ │                                                              │    │
+│ │ Status: In Progress (65%)                                    │    │
+│ │ Current stage: Writing tests                                 │    │
+│ └─────────────────────────────────────────────────────────────┘    │
+│                                                                     │
+│ 🤖 swarm-bot · 45 minutes ago                                      │
+│ ┌─────────────────────────────────────────────────────────────┐    │
+│ │ 🤖 **Swarm Bot**: ✅ PR Ready for Review!                    │    │
+│ │                                                              │    │
+│ │ **Pull Request:** #789                                       │    │
+│ │ **Duration:** 12 minutes                                     │    │
+│ │                                                              │    │
+│ │ ### Summary                                                  │    │
+│ │ - Implemented OAuth2 token refresh flow                      │    │
+│ │ - Added 15 unit tests                                        │    │
+│ └─────────────────────────────────────────────────────────────┘    │
+│                                                                     │
+│ 🔗 Linked Pull Requests                                            │
+│    PR #789 - feat: Add OAuth2 token refresh (merged)               │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+The issue becomes a complete audit trail of what happened!
 
 ## Requirements
 
