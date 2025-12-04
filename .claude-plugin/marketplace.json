@@ -51,6 +51,12 @@
       "tags": ["standards", "style", "naming"]
     },
     {
+      "name": "swarm",
+      "source": "./plugins/swarm",
+      "description": "Distributed task execution across multiple agents - parallel development, work manifests, remote orchestration",
+      "tags": ["agents", "distributed", "parallel", "orchestration", "cloud"]
+    },
+    {
       "name": "personality-sherlock",
       "source": "./plugins/personalities/personality-sherlock",
       "description": "Sherlock Holmes - analytical, precise, deductive reasoning for debugging",

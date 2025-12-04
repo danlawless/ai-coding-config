@@ -30,3 +30,9 @@ build/
 *.temp
 
 .created-prompts/
+
+# Swarm orchestration state
+.swarm/state.json
+.swarm/work/
+.swarm/reports/
+.swarm/agent-state.json

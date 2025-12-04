@@ -36,6 +36,13 @@ Core project rules that apply to all tasks:
 - `curl -fsSL https://raw.githubusercontent.com/TechNickAI/ai-coding-config/main/scripts/bootstrap.sh | bash` -
   Bootstrap for Cursor
 
+**Distributed Execution:**
+
+- `/swarm <manifest.yaml>` - Execute multiple tasks in parallel across remote agents
+- `/swarm <manifest.yaml> --local` - Execute tasks sequentially on local machine
+- `/swarm-issues --execute` - Build manifest from tagged GitHub issues and execute
+- `/swarm-issues --label sprint-47 --dry-run` - Preview issues that would be processed
+
 ## Code Conventions
 
 **DO:**
