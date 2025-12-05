@@ -3,6 +3,28 @@
 Distributed task execution across multiple Claude Code agents. Run batches of
 development tasks in parallel on remote compute, each producing independent PRs.
 
+## Quick Setup (Per-Project Config)
+
+Each project can have its own swarm agents configured via `.env.local`:
+
+```bash
+# Copy the template to your project
+cp ~/.ai_coding_config/templates/swarm/.env.local.example .env.local
+
+# Edit with your agent IPs
+nano .env.local
+```
+
+```bash
+# .env.local
+CLAUDE_SWARM_1_IP=170.9.226.213
+CLAUDE_SWARM_2_IP=170.9.237.208
+CLAUDE_SWARM_3_IP=
+CLAUDE_SWARM_4_IP=
+```
+
+That's it! The swarm commands will automatically read from `.env.local`.
+
 ## What This Plugin Provides
 
 - **`/swarm` command** - Execute work manifests across distributed agents
@@ -96,6 +118,63 @@ Tasks run one-at-a-time on your machine:
 ```
 
 Useful for testing manifests or when remote agents unavailable.
+
+## Agent Configuration
+
+### Option 1: Environment Variables (Recommended for Multi-Project)
+
+Configure agents per-project using `.env.local`:
+
+```bash
+# .env.local in your project root
+CLAUDE_SWARM_1_IP=170.9.226.213
+CLAUDE_SWARM_2_IP=170.9.237.208
+CLAUDE_SWARM_3_IP=192.168.1.100
+CLAUDE_SWARM_4_IP=192.168.1.101
+CLAUDE_SWARM_PORT=3847  # Optional, default 3847
+
+# Optional: Custom names
+CLAUDE_SWARM_1_NAME=oracle-prod-1
+CLAUDE_SWARM_2_NAME=oracle-prod-2
+```
+
+**Benefits:**
+- Each project can have different agents
+- Easily switch between dev/prod swarms
+- No need to manage `~/.swarm/agents.yaml`
+- Works with existing `.env.local` patterns
+
+**Helper commands:**
+```bash
+# List configured agents
+~/.ai_coding_config/scripts/swarm-env-loader.sh --list
+
+# Generate agents.yaml from .env.local
+~/.ai_coding_config/scripts/swarm-env-loader.sh --generate
+
+# Output as JSON (for scripts)
+~/.ai_coding_config/scripts/swarm-env-loader.sh --json
+```
+
+### Option 2: Global Config (~/.swarm/agents.yaml)
+
+For a single set of agents across all projects:
+
+```yaml
+# ~/.swarm/agents.yaml
+agents:
+  - name: oracle-arm-1
+    host: 170.9.226.213
+    port: 3847
+```
+
+### Config Priority
+
+The swarm looks for agents in this order:
+1. `.env.local` in current directory
+2. `.env.local` in git root
+3. `~/.swarm/agents.yaml`
+4. Falls back to `--local` mode (sequential on your machine)
 
 ## Setting Up Remote Agents
 
