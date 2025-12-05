@@ -75,18 +75,81 @@ Tasks form a directed acyclic graph. I process it in topological order:
 I validate the graph upfront - circular dependencies are rejected before any execution
 begins.
 
+## Traceability & Attribution
+
+Every unit of work must be traceable back to the agent that executed it. This enables
+debugging, auditing, and understanding system behavior.
+
+### Execution IDs
+
+Every swarm execution gets a unique ID: `{date}-{manifest-name}-{short-hash}`
+
+Example: `2024-12-04-sprint47-a3f2`
+
+This ID flows through:
+- `.swarm/state.json` - execution metadata
+- Git commit trailers - `Swarm-Execution-ID: ...`
+- PR descriptions - linked in body
+- Logs - correlation ID in all log entries
+
+### Agent Attribution
+
+For every task, I track:
+- **Which agent** executed it (`agent_id`, `agent_host`)
+- **When** it started and completed
+- **What** it produced (commit SHA, PR number/URL)
+- **How long** it took
+
+This lives in `.swarm/state.json` under each task's `execution_trace`.
+
+### Git Commit Trailers
+
+All commits from swarm tasks include machine-readable trailers:
+
+```
+feat: implement OAuth2 authentication
+
+Implements user authentication using OAuth2 flow.
+
+Closes #45
+
+Swarm-Execution-ID: 2024-12-04-sprint47-a3f2
+Swarm-Task-ID: feature-a
+Swarm-Agent: oracle-arm-1
+```
+
+This makes history searchable:
+```bash
+# All commits from specific agent
+git log --grep="Swarm-Agent: oracle-arm-1"
+
+# All commits from specific execution
+git log --grep="Swarm-Execution-ID: 2024-12-04-sprint47"
+
+# All commits for specific task
+git log --grep="Swarm-Task-ID: feature-a"
+```
+
+### PR Attribution
+
+PRs created by swarm include:
+- Label: `swarm-task`
+- Label: `agent:{agent-id}` (e.g., `agent:oracle-arm-1`)
+- Body section with execution metadata
+
 ## State Management Philosophy
 
 **Git is the source of truth.** Branches exist or they don't. PRs exist or they don't.
 Agent state is ephemeral.
 
-I maintain minimal local state in `.swarm/state.json` for:
+I maintain local state in `.swarm/state.json` for:
 - Resuming interrupted swarms
 - Tracking which agent has which task
 - Recording completion timestamps
+- **Full execution traces for attribution**
 
 But if that file disappears, I can reconstruct state from git - which branches exist,
-which PRs are open.
+which PRs are open, and commit trailers tell us which agent did what.
 
 ## When Things Go Wrong
 

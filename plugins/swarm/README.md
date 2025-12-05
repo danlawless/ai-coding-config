@@ -166,6 +166,69 @@ Task failures are isolated. Independent tasks continue.
 /swarm work.yaml --resume
 ```
 
+## Traceability & Attribution
+
+Every unit of work is fully traceable back to the agent that executed it.
+
+### Execution IDs
+
+Each swarm execution gets a unique ID that flows through the entire system:
+
+```
+2024-12-04-sprint47-a3f2
+```
+
+### Git Commit Trailers
+
+All commits include machine-readable trailers:
+
+```
+feat: implement rate limiting
+
+Swarm-Execution-ID: 2024-12-04-sprint47-a3f2
+Swarm-Task-ID: rate-limiting
+Swarm-Agent: oracle-arm-1
+```
+
+Query history by agent:
+
+```bash
+# Find all commits from specific agent
+git log --grep="Swarm-Agent: oracle-arm-1"
+
+# Find all commits from specific execution
+git log --grep="Swarm-Execution-ID: 2024-12-04-sprint47"
+```
+
+### State Tracking
+
+Full execution traces in `.swarm/state.json`:
+
+```json
+{
+  "execution_id": "2024-12-04-sprint47-a3f2",
+  "tasks": {
+    "rate-limiting": {
+      "execution_trace": {
+        "agent_id": "oracle-arm-1",
+        "started_at": "2024-12-04T10:30:15Z",
+        "completed_at": "2024-12-04T10:42:30Z",
+        "pr_number": 143,
+        "commit_sha": "abc123"
+      }
+    }
+  }
+}
+```
+
+### PR Attribution
+
+PRs include labels for filtering:
+- `swarm-task` - Identifies swarm-created PRs
+- `agent:oracle-arm-1` - Which agent created it
+
+See [docs/git-trailers.md](docs/git-trailers.md) and [docs/state-schema.md](docs/state-schema.md) for full details.
+
 ## GitHub Issues Workflow
 
 The easiest way to use swarm is through GitHub Issues:
@@ -236,9 +299,10 @@ specific about acceptance criteria and technical constraints.
 
 ## Files Created
 
-- `.swarm/state.json` - Execution state (for resume)
+- `.swarm/state.json` - Execution state with full traceability
 - `.swarm/agents.yaml` - Agent configuration (project-level)
 - `.swarm/reports/` - Execution reports
+- `.swarm/history/` - Historical state files for past executions
 
 ## Requirements
 
@@ -248,6 +312,8 @@ specific about acceptance criteria and technical constraints.
 
 ## See Also
 
+- [State Schema](docs/state-schema.md) - Full `.swarm/state.json` specification
+- [Git Trailers](docs/git-trailers.md) - Commit trailer conventions for traceability
 - [Swarm Work Manifest Spec](../../context/swarm-work-manifest.md)
 - [Setup Remote Agent Script](../../scripts/setup-remote-agent.sh)
 - [Optimal Development Workflow](../../context/optimal-development-workflow.md)
